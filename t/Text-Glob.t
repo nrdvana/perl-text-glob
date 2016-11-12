@@ -1,8 +1,9 @@
 #!perl -w
 use strict;
-use Test::More tests => 44;
+use Test::More tests => 48;
 
-BEGIN { use_ok('Text::Glob', qw( glob_to_regex match_glob ) ) }
+BEGIN { use_ok('Text::Glob',
+	qw( glob_to_regex glob_to_regex_string match_glob ) ) }
 
 my $regex = glob_to_regex( 'foo' );
 is( ref $regex, 'Regexp', "glob_to_regex hands back a regex" );
@@ -30,6 +31,17 @@ ok(  match_glob( 'foo.(bar)', 'foo.(bar)'), "escape ()" );
 
 ok( !match_glob( '*.foo',  '.file.foo' ), "strict . rule fail" );
 ok(  match_glob( '.*.foo', '.file.foo' ), "strict . rule match" );
+
+{
+local $Text::Glob::globstar = 1;
+is(  glob_to_regex_string( 'fu*bar' ), '(?=[^\.])fu(?:(?!\/).)*bar',
+    'globstar convert *' );
+ok( !match_glob( 'fu*bar', 'fu/bar' ), 'globstar fail' );
+is(  glob_to_regex_string( 'fu**bar' ), '(?=[^\.])fu.*bar',
+    'globstar convert **' );
+ok(  match_glob( 'fu**bar', 'fu/bar' ), 'globstar match' );
+}
+
 {
 local $Text::Glob::strict_leading_dot;
 ok(  match_glob( '*.foo', '.file.foo' ), "relaxed . rule" );

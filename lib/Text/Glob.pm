@@ -2,11 +2,12 @@ package Text::Glob;
 use strict;
 use Exporter;
 use vars qw/$VERSION @ISA @EXPORT_OK
-            $strict_leading_dot $strict_wildcard_slash/;
-$VERSION = '0.10';
+            $strict_leading_dot $strict_wildcard_slash $globstar/;
+$VERSION = '0.11';
 @ISA = 'Exporter';
 @EXPORT_OK = qw( glob_to_regex glob_to_regex_string match_glob );
 
+$globstar              = 0;
 $strict_leading_dot    = 1;
 $strict_wildcard_slash = 1;
 
@@ -29,7 +30,8 @@ sub glob_to_regex_string
     my ($regex, $in_curlies, $escaping);
     local $_;
     my $first_byte = 1;
-    for ($glob =~ m/(.)/gs) {
+    while ($glob =~ m/(.)/gs) {
+        local $_ = $1;
         if ($first_byte) {
             if ($strict_leading_dot) {
                 $regex .= '(?=[^\.])' unless $_ eq '.';
@@ -44,8 +46,18 @@ sub glob_to_regex_string
             $regex .= "\\$_";
         }
         elsif ($_ eq '*') {
-            $regex .= $escaping ? "\\*" :
-              $strict_wildcard_slash ? "(?:(?!$seperator).)*" : ".*";
+            if ( $escaping ) {
+                $regex .= '\\*';
+            }
+            else {
+                my $more;
+                if ( '*' eq substr $glob, pos $glob, 1 ) {
+                    $more = 1;
+                    pos $glob += 1;
+                }
+                $regex .= ( $strict_wildcard_slash && ! (
+                    $globstar && $more ) ) ? "(?:(?!$seperator).)*" : '.*';
+            }
         }
         elsif ($_ eq '?') {
             $regex .= $escaping ? "\\?" :
@@ -176,6 +188,10 @@ C<$Text::Glob::strict_wildcard_slash> to a false value while compiling
 the regex, or change the seperator that Text::Glob uses by setting
 C<$Text::Glob::seperator> to an alternative value while compiling the
 the regex.
+
+However, if C<$Text::Glob::globstar> is set to a true value, two
+consecutive asterisks (e.g. C<**.foo>) B<will> match C</>, though one
+asterisk will not.
 
 =back
 
