@@ -29,8 +29,10 @@ ok( !match_glob( 'foo.\\{c,h}\\*', 'foo.\\c' ) );
 
 ok(  match_glob( 'foo.(bar)', 'foo.(bar)'), "escape ()" );
 
-ok( !match_glob( '*.foo',  '.file.foo' ), "strict . rule fail" );
-ok(  match_glob( '.*.foo', '.file.foo' ), "strict . rule match" );
+ok( !match_glob( '*.foo',    '.file.foo' ), "strict . rule fail" );
+ok( !match_glob( '?foo',     '.foo'      ), "strict . rule fail" );
+ok(  match_glob( '.*.foo',   '.file.foo' ), "strict . rule match" );
+ok(  match_glob( '{.,_}foo', '.foo'      ), "strict . rule match" );
 
 {
 local $Text::Glob::globstar = 1;
@@ -45,6 +47,7 @@ ok(  match_glob( 'fu**bar', 'fu/bar' ), 'globstar match' );
 {
 local $Text::Glob::strict_leading_dot;
 ok(  match_glob( '*.foo', '.file.foo' ), "relaxed . rule" );
+ok(  match_glob( '?foo',  '.foo'      ), "relaxed . rule" );
 }
 
 ok( !match_glob( '*.fo?',   'foo/file.fob' ), "strict wildcard / fail" );
