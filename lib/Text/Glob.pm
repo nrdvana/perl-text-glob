@@ -180,18 +180,52 @@ the leading . in the glob pattern (C<.*.foo>), or set
 C<$Text::Glob::strict_leading_dot> to a false value while compiling
 the regex.
 
+This setting also affects whether the C<$globstar> feature will match
+intermediate directories that begin with '.'
+
 =item C<*> and C<?> do not match the seperator (i.e. do not match C</>)
 
-C<*.foo> does not match C<bar/baz.foo>.  For this you must either
-explicitly match the / in the glob (C<*/*.foo>), or set
-C<$Text::Glob::strict_wildcard_slash> to a false value while compiling
-the regex, or change the seperator that Text::Glob uses by setting
-C<$Text::Glob::seperator> to an alternative value while compiling the
-the regex.
+In the shell, "*" cannot match accross a directory separator, and you
+must normally explicitly match the '/' with the pattern.  However some
+tools like bash and rsync provide an alternate notation '**' for this
+purpose.  This module gives you plain shell behavior by default, but
+offers three workarounds:
 
-However, if C<$Text::Glob::globstar> is set to a true value, two
-consecutive asterisks (e.g. C<**.foo>) B<will> match C</>, though one
-asterisk will not.
+=over
+
+=item C<$Text::Glob::globstar>
+
+Named after the Bash shell option, setting this to true enables bash-like
+behavior.  Notice that it won't match hidden directories unless you also
+unset C<$Text::Glob::strict_leading_dot>.  Also note that if '**' is
+bounded by directory separators or the ends of a string, it can also match
+zero directories.
+
+=item C<$Text::Glob::strict_wildcard_slash>
+
+Set this to false to allow '*' to match the directory separator.
+
+=item C<$Text::Glob::seperator>
+
+You can simply re-define the separator character if that is an appropriate
+solution for your use case.
+
+=back
+
+Examples:
+
+  Pattern     String             Match?
+  *.foo       bar/baz.foo        no
+  */*.foo     bar/baz.foo        yes
+  **.foo      bar/baz.foo        no       # need to enabe globstar
+  */*.foo     .config/baz.foo    no       # strict_leading_dot in effect
+  
+  # With globstar enabled:
+  *.foo       bar/baz.foo        no
+  **.foo      bar/baz.foo        yes
+  **.foo      .config/baz.foo    no       # strict_leading_dot in effect
+  **/README   foo/bar/README     yes
+  **/README   README             yes
 
 =back
 
